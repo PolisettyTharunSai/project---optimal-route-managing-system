@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-
 #define INF INT_MAX
 #define MAX_CITIES 100
 #define MAX_EDGES 10 // Maximum number of edges per city
-
 typedef struct {
     int city;
     int weight;
