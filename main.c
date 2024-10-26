@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+
 #define INF INT_MAX
-#define MAX_CITIES 5000
-#define MAX_EDGES 10000 // Maximum number of edges per city
+#define MAX_CITIES 100
+#define MAX_EDGES 100
+
 typedef struct {
     int city;
     int weight;
@@ -11,7 +13,7 @@ typedef struct {
 
 typedef struct {
     Edge edges[MAX_EDGES];
-    int size; // Number of edges
+    int size;
 } Graph;
 
 typedef struct {
@@ -24,18 +26,24 @@ typedef struct {
     int size;
 } PriorityQueue;
 
-Graph graph[MAX_CITIES]; // Array of graphs for each city
-int n; // Number of cities
+Graph graph[MAX_CITIES];
+int n;
 
-// Function to create a priority queue
 void pq_push(PriorityQueue *pq, int distance, int city) {
+    if (pq->size >= MAX_CITIES) {
+        printf("Error: Priority Queue overflow\n");
+        return;
+    }
     pq->nodes[pq->size].distance = distance;
     pq->nodes[pq->size].city = city;
     pq->size++;
 }
 
 PQNode pq_pop(PriorityQueue *pq) {
-    // Find the node with the minimum distance
+    if (pq->size == 0) {
+        printf("Error: Priority Queue underflow\n");
+        return (PQNode){INF, -1};
+    }
     int minIndex = 0;
     for (int i = 1; i < pq->size; i++) {
         if (pq->nodes[i].distance < pq->nodes[minIndex].distance) {
@@ -43,7 +51,7 @@ PQNode pq_pop(PriorityQueue *pq) {
         }
     }
     PQNode minNode = pq->nodes[minIndex];
-    pq->nodes[minIndex] = pq->nodes[pq->size - 1]; // Replace with the last node
+    pq->nodes[minIndex] = pq->nodes[pq->size - 1];
     pq->size--;
     return minNode;
 }
@@ -52,19 +60,23 @@ int pq_empty(PriorityQueue *pq) {
     return pq->size == 0;
 }
 
-// Dijkstra's algorithm
 void dijkstra(int source, int dist[]) {
     for (int i = 0; i < n; i++) {
         dist[i] = INF;
     }
     dist[source] = 0;
 
-    PriorityQueue pq = { .size = 0 };
+    PriorityQueue pq = {.size = 0};
     pq_push(&pq, 0, source);
 
     while (!pq_empty(&pq)) {
         PQNode current = pq_pop(&pq);
         int u = current.city;
+
+        if (u < 0 || u >= n) {
+            printf("Error: Invalid city index %d\n", u);
+            continue;
+        }
 
         for (int i = 0; i < graph[u].size; i++) {
             int v = graph[u].edges[i].city;
@@ -78,77 +90,109 @@ void dijkstra(int source, int dist[]) {
     }
 }
 
-// TSP Nearest Neighbor Heuristic
-int tsp_nearest_neighbor(int start, int dist_matrix[MAX_CITIES][MAX_CITIES], int cities[], int num_cities) {
+int tsp_dijkstra_based(int source, int destinations[], int num_destinations) {
     int total_cost = 0;
-    int visited[MAX_CITIES] = { 0 };
-    int current_city = start;
+    int visited[MAX_CITIES] = {0};
+    int current_city = source;
 
-    visited[start] = 1;
+    visited[source] = 1;
+    printf("Path: %d", current_city);
 
-    for (int i = 1; i < num_cities; i++) {
+    for (int count = 0; count < num_destinations; count++) {
         int nearest_city = -1;
         int min_distance = INF;
+        int dist[MAX_CITIES];
 
-        for (int j = 0; j < num_cities; j++) {
-            if (!visited[j] && dist_matrix[current_city][j] < min_distance) {
-                min_distance = dist_matrix[current_city][j];
-                nearest_city = j;
+        dijkstra(current_city, dist);
+
+        for (int i = 0; i < num_destinations; i++) {
+            int destination = destinations[i];
+            if (!visited[destination] && dist[destination] < min_distance) {
+                min_distance = dist[destination];
+                nearest_city = destination;
             }
         }
 
-        if (nearest_city != -1) {
-            total_cost += min_distance;
-            visited[nearest_city] = 1;
-            current_city = nearest_city;
+        if (nearest_city == -1) {
+            printf("\nError: No unvisited destinations remaining.\n");
+            return -1;
         }
+
+        total_cost += min_distance;
+        visited[nearest_city] = 1;
+        current_city = nearest_city;
+
+        printf(" -> %d", current_city);
     }
 
+    printf("\nTotal minimal path cost to cover all destinations: %d\n", total_cost);
     return total_cost;
 }
 
-// Main MDMSMD with TSP Heuristic
-int MDMSMD_TSP(int source, int destinations[], int num_destinations) {
-    int dist_matrix[MAX_CITIES][MAX_CITIES];
+void graph_input(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Could not open file %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
 
-    // Step 1: Run Dijkstra's from each city
-    for (int i = 0; i < num_destinations; i++) {
-        int dist[MAX_CITIES];
-        dijkstra(destinations[i], dist);
-        for (int j = 0; j < num_destinations; j++) {
-            dist_matrix[i][j] = dist[destinations[j]];
+    for (int i = 0; i < MAX_CITIES; i++) {
+        graph[i].size = 0;
+    }
+
+    int node1, node2, weight;
+    while (fscanf(file, "%d,%d,%d", &node1, &node2, &weight) == 3) {
+        if (node1 >= MAX_CITIES || node2 >= MAX_CITIES) {
+            printf("Warning: Node %d or %d exceeds max cities.\n", node1, node2);
+            continue;
+        }
+
+        if (graph[node1].size < MAX_EDGES) {
+            graph[node1].edges[graph[node1].size++] = (Edge){node2, weight};
         }
     }
 
-    // Step 2: Apply TSP heuristic to minimize total travel cost
-    return tsp_nearest_neighbor(0, dist_matrix, destinations, num_destinations);
+    fclose(file);
 }
 
 int main() {
-    n = 5; // Number of cities
+    const char *filename = "graph_data.csv";
 
-    // Example graph edges (city1, city2, weight)
-    graph[0].edges[0] = (Edge){1, 9}; graph[0].size = 1;
-    graph[0].edges[1] = (Edge){2, 20}; graph[0].size = 2;
-    
-    graph[1].edges[0] = (Edge){2, 5}; graph[1].size = 1;
-    graph[1].edges[1] = (Edge){3, 1}; graph[1].size = 2;
-    graph[1].edges[2] = (Edge){4, 5}; graph[1].size = 3;
-    
-    graph[2].edges[0] = (Edge){3, 30}; graph[2].size = 1;
-    graph[2].edges[1] = (Edge){4, 25}; graph[2].size = 2;
-    
-    graph[3].edges[0] = (Edge){4, 15}; graph[3].size = 1;
-    
-    graph[4].edges[0] = (Edge){3, 7}; graph[4].size = 1;
+    n = MAX_CITIES;
+    graph_input(filename);
 
-    // Cities to visit
-    int destinations[] = {0, 1, 3, 4};
-    int num_destinations = sizeof(destinations) / sizeof(destinations[0]);
+    int source;
+    printf("Enter the source city (0 to %d): ", n - 1);
+    scanf("%d", &source);
+    if (source < 0 || source >= n) {
+        printf("Error: Invalid source city %d. Must be between 0 and %d.\n", source, n - 1);
+        return EXIT_FAILURE;
+    }
 
-    // Run the algorithm
-    int result = MDMSMD_TSP(0, destinations, num_destinations);
-    printf("Minimum travel cost covering all cities: %d\n", result);
+    int num_destinations;
+    printf("Enter the number of destinations: ");
+    scanf("%d", &num_destinations);
+    if (num_destinations <= 0 || num_destinations > MAX_CITIES) {
+        printf("Error: Invalid number of destinations. Must be between 1 and %d.\n", MAX_CITIES);
+        return EXIT_FAILURE;
+    }
+
+    int destinations[MAX_CITIES];
+    printf("Enter the destination cities (0 to %d):\n", n - 1);
+    for (int i = 0; i < num_destinations; i++) {
+        printf("Destination %d: ", i + 1);
+        scanf("%d", &destinations[i]);
+        if (destinations[i] < 0 || destinations[i] >= n) {
+            printf("Error: Invalid destination city %d. Must be between 0 and %d.\n", destinations[i], n - 1);
+            return EXIT_FAILURE;
+        }
+    }
+
+    int total_cost = tsp_dijkstra_based(source, destinations, num_destinations);
+    if (total_cost == -1) {
+        printf("No feasible path covering all destinations.\n");
+    }
 
     return 0;
 }
+
