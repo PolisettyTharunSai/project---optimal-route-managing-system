@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <time.h>
 
 #define INF INT_MAX
-#define MAX_CITIES 100
-#define MAX_EDGES 100
+#define MAX_CITIES 2000
+#define MAX_EDGES 10000
 
 typedef struct {
     int city;
@@ -16,6 +17,9 @@ typedef struct {
     int size;
 } Graph;
 
+Graph graph[MAX_CITIES];
+int n;
+
 typedef struct {
     int distance;
     int city;
@@ -25,9 +29,6 @@ typedef struct {
     PQNode nodes[MAX_CITIES];
     int size;
 } PriorityQueue;
-
-Graph graph[MAX_CITIES];
-int n;
 
 void pq_push(PriorityQueue *pq, int distance, int city) {
     if (pq->size >= MAX_CITIES) {
@@ -60,9 +61,10 @@ int pq_empty(PriorityQueue *pq) {
     return pq->size == 0;
 }
 
-void dijkstra(int source, int dist[]) {
+void dijkstra(int source, int dist[], int prev[]) {
     for (int i = 0; i < n; i++) {
         dist[i] = INF;
+        prev[i] = -1;  // Initialize previous array
     }
     dist[source] = 0;
 
@@ -84,26 +86,60 @@ void dijkstra(int source, int dist[]) {
 
             if (dist[u] + weight < dist[v]) {
                 dist[v] = dist[u] + weight;
+                prev[v] = u;  // Store the previous city in the shortest path
                 pq_push(&pq, dist[v], v);
             }
         }
     }
 }
 
-int tsp_dijkstra_based(int source, int destinations[], int num_destinations) {
+void assign_random_weights() {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < graph[i].size; j++) {
+            graph[i].edges[j].weight = rand() % 100 + 1;  // Random weight between 1 and 100
+        }
+    }
+}
+
+void save_weights_to_file(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Error: Could not open file %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < graph[i].size; j++) {
+            fprintf(file, "%d,%d,%d\n", i, graph[i].edges[j].city, graph[i].edges[j].weight);
+        }
+    }
+
+    fclose(file);
+}
+
+void print_path(int start, int end, int prev[]) {
+    if (prev[end] != -1 && end != start) {
+        print_path(start, prev[end], prev);  // Recursively print the path
+    }
+    if (end != start) {
+        printf(" -> %d", end);  // Print the current node after the previous one
+    }
+}
+
+int tsp_dijkstra_based(int source, int destinations[], int num_destinations, const char *filename) {
     int total_cost = 0;
     int visited[MAX_CITIES] = {0};
     int current_city = source;
 
     visited[source] = 1;
-    printf("Path: %d", current_city);
+    printf("Path: %d", current_city);  // Start the path from the source city
 
     for (int count = 0; count < num_destinations; count++) {
         int nearest_city = -1;
         int min_distance = INF;
-        int dist[MAX_CITIES];
+        int dist[MAX_CITIES], prev[MAX_CITIES];
 
-        dijkstra(current_city, dist);
+        dijkstra(current_city, dist, prev);  // Call Dijkstra's algorithm
 
         for (int i = 0; i < num_destinations; i++) {
             int destination = destinations[i];
@@ -118,14 +154,19 @@ int tsp_dijkstra_based(int source, int destinations[], int num_destinations) {
             return -1;
         }
 
-        total_cost += min_distance;
-        visited[nearest_city] = 1;
-        current_city = nearest_city;
+        // Print the path from current_city to nearest_city, including all intermediate nodes
+        if (current_city != nearest_city) {
+            print_path(current_city, nearest_city, prev);
+        }
 
-        printf(" -> %d", current_city);
+        total_cost += min_distance;  // Update total cost
+        visited[nearest_city] = 1;  // Mark this city as visited
+        current_city = nearest_city;  // Move to the nearest city
     }
 
     printf("\nTotal minimal path cost to cover all destinations: %d\n", total_cost);
+
+    save_weights_to_file(filename);  // Save final weights back to the file
     return total_cost;
 }
 
@@ -156,10 +197,14 @@ void graph_input(const char *filename) {
 }
 
 int main() {
-    const char *filename = "graph_data.csv";
+    srand(time(0));  // Seed for random weight generation
 
+    const char *filename = "graph_data.csv";
     n = MAX_CITIES;
     graph_input(filename);
+
+    // Assign random weights to edges
+    assign_random_weights();
 
     int source;
     printf("Enter the source city (0 to %d): ", n - 1);
@@ -188,11 +233,10 @@ int main() {
         }
     }
 
-    int total_cost = tsp_dijkstra_based(source, destinations, num_destinations);
+    int total_cost = tsp_dijkstra_based(source, destinations, num_destinations, filename);
     if (total_cost == -1) {
         printf("No feasible path covering all destinations.\n");
     }
 
     return 0;
 }
-
