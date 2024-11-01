@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <math.h>
 #include <time.h>
 
 #define INF INT_MAX
@@ -21,37 +22,45 @@ Graph graph[MAX_CITIES];
 int n;
 
 typedef struct {
-    int distance;
-    int city;
-} PQNode;
+    int x, y;  // Coordinates for heuristic calculation
+} CityLocation;
+
+CityLocation cityLocations[MAX_CITIES];  // Array to store city coordinates
 
 typedef struct {
-    PQNode nodes[MAX_CITIES];
+    int f_cost;  // f(x) = g(x) + h(x)
+    int g_cost;  // Actual distance from the start node
+    int city;
+} AStarNode;
+
+typedef struct {
+    AStarNode nodes[MAX_CITIES];
     int size;
 } PriorityQueue;
 
-void pq_push(PriorityQueue *pq, int distance, int city) {
+void pq_push(PriorityQueue *pq, int f_cost, int g_cost, int city) {
     if (pq->size >= MAX_CITIES) {
         printf("Error: Priority Queue overflow\n");
         return;
     }
-    pq->nodes[pq->size].distance = distance;
+    pq->nodes[pq->size].f_cost = f_cost;
+    pq->nodes[pq->size].g_cost = g_cost;
     pq->nodes[pq->size].city = city;
     pq->size++;
 }
 
-PQNode pq_pop(PriorityQueue *pq) {
+AStarNode pq_pop(PriorityQueue *pq) {
     if (pq->size == 0) {
         printf("Error: Priority Queue underflow\n");
-        return (PQNode){INF, -1};
+        return (AStarNode){INF, INF, -1};
     }
     int minIndex = 0;
     for (int i = 1; i < pq->size; i++) {
-        if (pq->nodes[i].distance < pq->nodes[minIndex].distance) {
+        if (pq->nodes[i].f_cost < pq->nodes[minIndex].f_cost) {
             minIndex = i;
         }
     }
-    PQNode minNode = pq->nodes[minIndex];
+    AStarNode minNode = pq->nodes[minIndex];
     pq->nodes[minIndex] = pq->nodes[pq->size - 1];
     pq->size--;
     return minNode;
@@ -61,35 +70,75 @@ int pq_empty(PriorityQueue *pq) {
     return pq->size == 0;
 }
 
-void dijkstra(int source, int dist[], int prev[]) {
+// Heuristic function using Euclidean distance between cities
+int heuristic(int city1, int city2) {
+    int dx = cityLocations[city1].x - cityLocations[city2].x;
+    int dy = cityLocations[city1].y - cityLocations[city2].y;
+    return (int)sqrt(dx * dx + dy * dy);
+}
+
+void a_star(int source, int target, int dist[], int prev[]) {
     for (int i = 0; i < n; i++) {
         dist[i] = INF;
-        prev[i] = -1;  // Initialize previous array
+        prev[i] = -1;
     }
     dist[source] = 0;
 
     PriorityQueue pq = {.size = 0};
-    pq_push(&pq, 0, source);
+    pq_push(&pq, heuristic(source, target), 0, source);
 
     while (!pq_empty(&pq)) {
-        PQNode current = pq_pop(&pq);
+        AStarNode current = pq_pop(&pq);
         int u = current.city;
 
-        if (u < 0 || u >= n) {
-            printf("Error: Invalid city index %d\n", u);
-            continue;
+        if (u == target) {
+            return;  // Early exit if target is reached
         }
 
         for (int i = 0; i < graph[u].size; i++) {
             int v = graph[u].edges[i].city;
             int weight = graph[u].edges[i].weight;
+            int tentative_g_cost = dist[u] + weight;
 
-            if (dist[u] + weight < dist[v]) {
-                dist[v] = dist[u] + weight;
-                prev[v] = u;  // Store the previous city in the shortest path
-                pq_push(&pq, dist[v], v);
+            if (tentative_g_cost < dist[v]) {
+                dist[v] = tentative_g_cost;
+                prev[v] = u;
+                int f_cost = tentative_g_cost + heuristic(v, target);
+                pq_push(&pq, f_cost, tentative_g_cost, v);
             }
         }
+    }
+}
+
+void graph_input(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Could not open file %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < MAX_CITIES; i++) {
+        graph[i].size = 0;
+    }
+
+    int node1, node2, weight;
+    while (fscanf(file, "%d,%d,%d", &node1, &node2, &weight) == 3) {
+        if (node1 >= MAX_CITIES || node2 >= MAX_CITIES) {
+            printf("Warning: Node %d or %d exceeds max cities.\n", node1, node2);
+            continue;
+        }
+
+        if (graph[node1].size < MAX_EDGES) {
+            graph[node1].edges[graph[node1].size++] = (Edge){node2, weight};
+        }
+    }
+
+    fclose(file);
+}
+
+void clear_graph() {
+    for (int i = 0; i < MAX_CITIES; i++) {
+        graph[i].size = 0;
     }
 }
 
@@ -126,7 +175,7 @@ void print_path(int start, int end, int prev[]) {
     }
 }
 
-int tsp_dijkstra_based(int source, int destinations[], int num_destinations, const char *filename) {
+int tsp_a_star_based(int source, int destinations[], int num_destinations, const char *filename) {
     int total_cost = 0;
     int visited[MAX_CITIES] = {0};
     int current_city = source;
@@ -139,13 +188,21 @@ int tsp_dijkstra_based(int source, int destinations[], int num_destinations, con
         int min_distance = INF;
         int dist[MAX_CITIES], prev[MAX_CITIES];
 
-        dijkstra(current_city, dist, prev);  // Call Dijkstra's algorithm
+        // Randomize weights only after the first round
+        if (count > 0) {
+            assign_random_weights();  // Randomize weights
+            save_weights_to_file(filename);  // Save to file
+            clear_graph();  // Clear graph structure before reloading
+            graph_input(filename);  // Reload the graph with updated weights
+        }
 
         for (int i = 0; i < num_destinations; i++) {
-            int destination = destinations[i];
-            if (!visited[destination] && dist[destination] < min_distance) {
-                min_distance = dist[destination];
-                nearest_city = destination;
+            if (!visited[destinations[i]]) {
+                a_star(current_city, destinations[i], dist, prev);  // Use A* for shortest path
+                if (dist[destinations[i]] < min_distance) {
+                    min_distance = dist[destinations[i]];
+                    nearest_city = destinations[i];
+                }
             }
         }
 
@@ -166,45 +223,15 @@ int tsp_dijkstra_based(int source, int destinations[], int num_destinations, con
 
     printf("\nTotal minimal path cost to cover all destinations: %d\n", total_cost);
 
-    save_weights_to_file(filename);  // Save final weights back to the file
     return total_cost;
-}
-
-void graph_input(const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        printf("Error: Could not open file %s\n", filename);
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < MAX_CITIES; i++) {
-        graph[i].size = 0;
-    }
-
-    int node1, node2, weight;
-    while (fscanf(file, "%d,%d,%d", &node1, &node2, &weight) == 3) {
-        if (node1 >= MAX_CITIES || node2 >= MAX_CITIES) {
-            printf("Warning: Node %d or %d exceeds max cities.\n", node1, node2);
-            continue;
-        }
-
-        if (graph[node1].size < MAX_EDGES) {
-            graph[node1].edges[graph[node1].size++] = (Edge){node2, weight};
-        }
-    }
-
-    fclose(file);
 }
 
 int main() {
     srand(time(0));  // Seed for random weight generation
 
-    const char *filename = "graph_data.csv";
+    const char *filename = "graph_data0.csv";
     n = MAX_CITIES;
     graph_input(filename);
-
-    // Assign random weights to edges
-    assign_random_weights();
 
     int source;
     printf("Enter the source city (0 to %d): ", n - 1);
@@ -233,10 +260,7 @@ int main() {
         }
     }
 
-    int total_cost = tsp_dijkstra_based(source, destinations, num_destinations, filename);
-    if (total_cost == -1) {
-        printf("No feasible path covering all destinations.\n");
-    }
+    tsp_a_star_based(source, destinations, num_destinations, filename);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
