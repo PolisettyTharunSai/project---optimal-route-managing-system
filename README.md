@@ -2,11 +2,11 @@
 
 ## Table of Contents
 
-- [Project Overview](https://github.com/PolisettyTharunSai/project---optimal-route-managing-system/edit/tharun/README.md#project-overview)
-- [Features](https://github.com/PolisettyTharunSai/project---optimal-route-managing-system/edit/tharun/README.md#features)
-- [Components](https://github.com/PolisettyTharunSai/project---optimal-route-managing-system/edit/tharun/README.md#components)
-- [Requirements](https://github.com/PolisettyTharunSai/project---optimal-route-managing-system/edit/tharun/README.md#requirements)
-- [Usage](https://github.com/PolisettyTharunSai/project---optimal-route-managing-system/edit/tharun/README.md#usage)
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Components](#components)
+- [Requirements](#requirements)
+- [Usage](#usage)
 - [Input File Descriptions](#input-file-descriptions)
 
 ---
@@ -71,4 +71,7 @@ Key components include:
    ```js
     <node1>,<node2>,<w>   
    ```
-     
+## Flow chart: 
+Our project is based on finding the nearest destination to the present node through using A_start algorithm, then repeating this process until all the destinations are visited. This below Flowchart showcases a simpler understanding of above mentioned process including the inputs and outputs.
+   
+![Flowchart (1)](https://github.com/user-attachments/assets/01801169-5646-41ae-b790-5e2abcd952cb)
