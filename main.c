@@ -574,7 +574,7 @@ void tsp_a_star_based(int source, int destinations[], int num_destinations, cons
 int main() {
     srand(time(0));  // Seed for random weight generation
 
-    const char *filename = "graph_data1.csv";
+    const char *filename = "graph_data.csv";
     n = graph_input(filename)+1;    //0 based indexing give one less city.
     // User input for edges to exclude
     int num_excluded;
