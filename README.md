@@ -175,11 +175,37 @@ compare their `node2` values. This two-level comparison guarantees that each `RB
    ```
    ./main
    ```
-5. **Output description**
-   Here is an example testcase for better understanding of input formatting and output expectation.
-   ```bash
-      
-   ```     
+5. **Output description:**
+   The Program promises to output the Total minimum path cost to cover all the destinations and the Optimal path through which the minimum cost is obtained.
+Output also include warnings for any violations occured during the input.
+
+Here is an example testcase for better understanding of input formatting and output expectation.
+
+   ```
+      Enter the number of edges to exclude: 0
+      Enter the source city (0 to 1999): 3
+      Enter the number of destinations: 1
+      Enter the destination cities (0 to 1999):
+      Destination 1: 1
+      Path: 3 -> 2 -> 1
+      Total minimal path cost to cover all destinations: 3
+   ```
+
+When we have executed the command once you would observe there will be a change of edge weights in `graph_data.csv` file. Which simulates the dynamic traffic updation by randomly assigning weights.
+Please check the `graph_data.csv` again to check wheter the intended input is present or not.
+
+   ```
+      Enter the number of edges to exclude: 1
+      Enter edge to exclude (node1,node2): 3,2
+      Enter the source city (0 to 1999): 3
+      Enter the number of destinations: 1
+      Enter the destination cities (0 to 1999):
+      Destination 1: 1
+      Path: 3 -> 4 -> 2 -> 1
+      Total minimal path cost to cover all destinations: 12
+   ```
+Again running for the original `graph_data.csv` this time excluding an edge from 3 to 2 which makes the shortest path changed from the first case. 
+
 ## Flow chart: 
 Our project focuses on identifying the nearest destination from the current node by utilizing the A* search algorithm. This process is repeated iteratively until all destination nodes have been visited. The flowchart below provides a clearer and more representation of this approach, illustrating the inputs and outputs involved in the overall process.
    
