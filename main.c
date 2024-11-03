@@ -1,3 +1,5 @@
+//Including all the Required Libraries.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -5,8 +7,9 @@
 #include <time.h>
 
 #define INF INT_MAX
+//Limiting the max allowed values.
 #define MAX_CITIES 2000
-#define MAX_EDGES 10000
+#define MAX_EDGES  1000
 
 typedef struct {
     int city;
@@ -21,11 +24,12 @@ typedef struct {
 Graph graph[MAX_CITIES];
 int n;
 
+//Co-ordinates for nodes.
 typedef struct {
-    int x, y;  // Coordinates for heuristic calculation
+    int x, y;  
 } CityLocation;
 
-CityLocation cityLocations[MAX_CITIES];  // Array to store city coordinates
+CityLocation cityLocations[MAX_CITIES];
 
 typedef struct {
     int f_cost;  // f(x) = g(x) + h(x)
@@ -52,14 +56,14 @@ AStarNode pq_pop(PriorityQueue *pq);
 int pq_empty(PriorityQueue *pq);
 int heuristic(int city1, int city2);
 void a_star(int source, int target, int dist[], int prev[]);
-void graph_input(const char *filename);
+int graph_input(const char *filename);
 void clear_graph();
 void save_weights_to_file(const char *filename);
 void print_path(int start, int end, int prev[]);
 void remove_edge(int node1, int node2);
 void update_file(const char *filename, int node1, int node2);
 void tsp_a_star_based(int source, int destinations[], int num_destinations, const char *filename);
-
+//RBtree functions
 RBTNode *create_node(int node1, int node2) {
     RBTNode *new_node = (RBTNode *)malloc(sizeof(RBTNode));
     new_node->node1 = node1;
@@ -312,7 +316,7 @@ int rbt_search(RBTNode *root, int node1, int node2) {
     }
     return 0; // Not found
 }
-// Red-Black Tree Functions
+
 void pq_push(PriorityQueue *pq, int f_cost, int g_cost, int city) {
     if (pq->size >= MAX_CITIES) {
         printf("Error: Priority Queue overflow\n");
@@ -350,17 +354,21 @@ int heuristic(int city1, int city2) {
     int dy = cityLocations[city1].y - cityLocations[city2].y;
     return (int)sqrt(dx * dx + dy * dy);
 }
+// Implements the A* algorithm to find the shortest path from the source to the target node in a graph, using distance and Euclidean heuristic values for optimal pathfinding.
 
 void a_star(int source, int target, int dist[], int prev[]) {
+//intialsing dist of all nodes to INF and prev to -1
     for (int i = 0; i < n; i++) {
         dist[i] = INF;
         prev[i] = -1;
     }
+    //dist of source =0
     dist[source] = 0;
 
     PriorityQueue pq = {.size = 0};
     pq_push(&pq, heuristic(source, target), 0, source);
-
+	// Processes nodes in the priority queue to explore potential paths towards the target using heuristic estimates for prioritization. 
+	// Updates the shortest distance and predecessor information for each neighbor if a better path is found based on the heuristic.
     while (!pq_empty(&pq)) {
         AStarNode current = pq_pop(&pq);
         int u = current.city;
@@ -383,12 +391,12 @@ void a_star(int source, int target, int dist[], int prev[]) {
         }
     }
 }
-
-void graph_input(const char *filename) {
+//taking the graph input from the file  and return the max node value
+int graph_input(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Error: Could not open file %s\n", filename);
-        exit(EXIT_FAILURE);
+        return -1;  // Return -1 on failure
     }
 
     for (int i = 0; i < MAX_CITIES; i++) {
@@ -396,11 +404,16 @@ void graph_input(const char *filename) {
     }
 
     int node1, node2, weight;
+    int max_city = -1;  // Initialize max_city to -1 to handle cases where no valid node is read
+
     while (fscanf(file, "%d,%d,%d", &node1, &node2, &weight) == 3) {
         if (node1 >= MAX_CITIES || node2 >= MAX_CITIES) {
             printf("Warning: Node %d or %d exceeds max cities.\n", node1, node2);
             continue;
         }
+
+        // Update max_city with the maximum of node1, node2, and the current max_city
+        max_city = (node1 > node2 ? node1 : node2) > max_city ? (node1 > node2 ? node1 : node2) : max_city;
 
         if (graph[node1].size < MAX_EDGES) {
             graph[node1].edges[graph[node1].size++] = (Edge){node2, weight};
@@ -409,14 +422,16 @@ void graph_input(const char *filename) {
     }
 
     fclose(file);
+    return max_city;  // Return the maximum node value encountered
 }
 
+//to clear the graph
 void clear_graph() {
     for (int i = 0; i < MAX_CITIES; i++) {
         graph[i].size = 0;
     }
 }
-
+//to print the optimal path travelled
 void print_path(int start, int end, int prev[]) {
     if (prev[end] != -1 && end != start) {
         print_path(start, prev[end], prev);  // Recursively print the path
@@ -425,7 +440,7 @@ void print_path(int start, int end, int prev[]) {
         printf(" -> %d", end);  // Print the current node after the previous one
     }
 }
-
+//to remove an avoided edge from graph
 void remove_edge(int node1, int node2) {
     for (int i = 0; i < graph[node1].size; i++) {
         if (graph[node1].edges[i].city == node2) {
@@ -434,7 +449,7 @@ void remove_edge(int node1, int node2) {
         }
     }
 }
-
+//to remove the avoided edges from the file 
 void update_file(const char *filename, int node1, int node2) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -461,6 +476,7 @@ void update_file(const char *filename, int node1, int node2) {
     remove(filename);
     rename("temp.csv", filename);
 }
+//to update the weight of edge to new weight 
 void update_edge_weight(int node1, int node2, int new_weight) {
     for (int i = 0; i < graph[node1].size; i++) {
         if (graph[node1].edges[i].city == node2) {
@@ -486,6 +502,7 @@ void save_weights_to_file(const char *filename) {
 
     fclose(file);
 }
+//generating random weights 
 void randomize_edge_weights() {
     for (int i = 0; i < MAX_CITIES; i++) {
         for (int j = 0; j < graph[i].size; j++) {
@@ -496,8 +513,8 @@ void randomize_edge_weights() {
     }
 }
 
-// Modified TSP function with dynamic weight updates
-// Modified TSP function with dynamic weight updates
+// Implements a modified Traveling Salesman Problem (TSP) solution using A* to find the nearest unvisited destination while allowing for dynamic weight updates after the first selection. 
+// Tracks the total path cost and updates edge weights randomly to reflect changes in the graph's state, ensuring efficient route recalculations.
 void tsp_a_star_based(int source, int destinations[], int num_destinations, const char *filename) {
     int total_cost = 0;
     int visited[MAX_CITIES] = {0};
@@ -537,7 +554,7 @@ void tsp_a_star_based(int source, int destinations[], int num_destinations, cons
         visited[nearest_city] = 1;
 
         // Update weights randomly only after the first selection
-        if (!first_selection_done) {
+        if (!first_selection_done && num_destinations>1) {
             // Randomize edge weights after the first nearest neighbor selection
             randomize_edge_weights();
 
@@ -558,9 +575,7 @@ int main() {
     srand(time(0));  // Seed for random weight generation
 
     const char *filename = "graph_data1.csv";
-    n = MAX_CITIES;
-    graph_input(filename);
-
+    n = graph_input(filename)+1;    //0 based indexing give one less city.
     // User input for edges to exclude
     int num_excluded;
     printf("Enter the number of edges to exclude: ");
@@ -601,7 +616,7 @@ int main() {
             return EXIT_FAILURE;
         }
     }
-
+	//calling the function to output the optimal path and optimal most
     tsp_a_star_based(source, destinations, num_destinations, filename);
 
     return EXIT_SUCCESS;
