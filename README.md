@@ -5,31 +5,22 @@
 - [Project Overview](#project-overview)
 - [Components](#components)
 - [Algorithms and Data Structures Explanation](#algorithms-and-data-structures-explanation)
+  - [1. A-star (A*) Algorithm](#1-a-star-a-algorithm)
+  - [2. Red Black Tree Data Structure](#2-red-black-tree-data-structure)
 - [Usage](#usage)
+  - [Requirements](#requirements)
+  - [Commands and detailed process](#commands-and-detailed-process)
 - [Flow Chart](#flow-chart)
 
 ---
 
 ## Project Overview
 
-The project involves finding an efficient path from a single source to
-multiple destinations in a strongly connected, directed graph with positive weights,
-relaxing constraints compared to the Traveling Salesman Problem (TSP) by allow-
-ing nodes to be visited multiple times and focusing on minimizing computational
-operations rather than achieving a strictly optimal path. The solution combines
-TSP principles with the A* algorithm, leveraging heuristics to prioritize promis-
-ing paths and dynamically updating edge weights as nodes are visited. Red-Black
-Trees are utilized for efficient data management, facilitating quick updates and
-retrieval of edge weights to optimize performance. Further enhancements may in-
-clude reducing the search space with bidirectional search or clustering closely con-
-nected nodes. This practical and flexible approach effectively balances efficiency
-and near-optimality in single-source, multi-destination pathfinding while maintain-
-ing an organized structure that supports rapid access and modifications to graph
-data.
+The project focuses on efficiently finding paths from a single source to multiple destination nodes within a strongly connected, directed graph with positive edge weights, specifically tailored for an Optimal Route Managing System in real-time traffic scenarios. It employs the A* search algorithm enhanced by a Euclidean heuristic, effectively guiding the search process toward optimal route selection by estimating the distance to target nodes and minimizing overall path costs. A notable feature of this approach is the dynamic updating of edge weights, which reflects real-time changes in traffic conditions as nodes are visited. This adaptability ensures the algorithm accurately represents the current state of the graph, addressing fluctuations in edge weights due to varying traffic conditions or user-defined constraints.To manage these edge weight updates and delete unwanted edges based on user-defined routes to be avoided, Red-Black Trees are utilized. This enhances the flexibility of the graph's structure and improves performance during the pathfinding process, allowing for a responsive and efficient navigation experience in the context of real-time traffic management.
 
 ## Components
 
-1. **A*-Based TSP Solver**:
+1. **A star-Based TSP Solver**:
    - An A*-based solution for the Traveling Salesman Problem (TSP), adapted for dynamic updates and optimized shortest paths.
    - Heuristic-based shortest path finder between nodes, with Euclidean distance as the primary heuristic.
    - Used in a modified TSP algorithm to find the nearest neighbor at each iteration for efficient route selection.
@@ -47,30 +38,42 @@ data.
 ## Algorithms and Data Structures Explanation:
 
 ### 1. A-star (A\*) algorithm: 
-a well-known form of best-first search that minimizes the total estimated solution cost. The A\* algorithm evaluates nodes by combining the cost to reach the node, `g(n)`, and the estimated cost to get from the node to the destination, `h(n)`:
 
-**f(n) = g(n) + h(n)**
+The A algorithm* is a best-first search method used to find the shortest path to a target. It calculates a cost for each node in the path using two main components:
 
-- **g(n)**: The cost to reach the node
-- **h(n)**: The cost to get from the node to the destination
-A\* search is a strategy where we first try the node with the lowest value of `g(n) + h(n)`. This approach ensures that A\* search is both complete and optimal, provided that the heuristic function `h(n)` satisfies certain conditions.
+**g(n)**: This is the actual cost from the start node to the current node `𝑛`. It reflects the total distance or effort already expended to reach that point.
+
+**h(n)**: This is the heuristic or estimated cost from the current node `𝑛` to the destination node. It’s a guess of the remaining distance, intended to guide the search in the right direction.
+
+**f(n)**: This is the sum of the two costs, `f(n) = g(n) + h(n)` .It represents the total estimated cost of the path through node `𝑛`: the actual cost so far plus the estimated cost to the goal.
+
+The A* search strategy always selects the node with the lowest `f(n)` value to expand next. This method is guaranteed to find the shortest path if the heuristic `h(n)` is admissible (never overestimates the cost to reach the goal) and consistent (the heuristic cost between nodes does not decrease along the path).
+
+By balancing both actual and estimated costs, A* search ensures a complete and optimal solution, reaching the destination by the shortest possible route.
+
+**Euclidean Distance Heuristic**: Used in situations where diagonal movements are allowed. It calculates the straight-line (Euclidean) distance between the current node and the goal node. 
+```
+ h = sqrt ( (current_cell.x – goal.x)2 + (current_cell.y – goal.y)2 )
+```
 
 #### Conditions for Optimal and Consistent Heuristic:
 
 For optimality, the heuristic `h(n)` must be admissible. An admissible heuristic never overestimates the cost to reach the goal. Since `g(n)` is the actual cost to reach `n` along the current path, and `f(n) = g(n) + h(n)`, it follows that `f(n)` never overestimates the cost of a solution along the current path through `n`.
 
-_Admissible heuristics_ are optimistic because they assume the cost of solving the problem is less than it actually is. An example of an admissible heuristic is the straight-line distance `hSLD` used for getting to Bucharest. The straight-line distance is admissible because the shortest path between any two points is a straight line, which cannot be an overestimate.
-
-![A* Tree Search Progress](https://github.com/user-attachments/assets/99b7a888-2fd4-4917-a54c-9c4c8c011e12)
-
-The above figure shows the progress of an A\* tree search for Bucharest.
-
 #### Other important Heuristics:
 **Manhattan Distance Heuristic**: Commonly used in grid-based pathfinding, such as in games or robotics. It calculates the sum of the horizontal and vertical distances from the current node to the goal node, assuming only orthogonal movements are allowed.
-
-**Euclidean Distance Heuristic**: Used in situations where diagonal movements are allowed. It calculates the straight-line (Euclidean) distance between the current node and the goal node.
+```
+h = abs (current_cell.x – goal.x) + abs (current_cell.y – goal.y)
+```
 
 **Diagonal Distance Heuristic**: Used in grid-based environments where diagonal moves are allowed. It estimates the distance by considering both horizontal and vertical moves, as well as diagonal moves, using a combination of these distances.
+```
+   dx = abs(current_cell.x – goal.x)
+   dy = abs(current_cell.y – goal.y)
+   
+   h = D * (dx + dy) + (D2 - 2 * D) * min(dx, dy)
+   where D is length of each node(usually = 1) and D2 is diagonal distance between each node (usually = sqrt(2) ). 
+```
 
 **Octile Distance Heuristic**: A variation of the diagonal distance heuristic that assumes diagonal moves are more costly. It uses a weighted combination of horizontal, vertical, and diagonal distances, reflecting the higher cost of diagonal moves.
 
@@ -78,34 +81,47 @@ The above figure shows the progress of an A\* tree search for Bucharest.
 
 _For more details, refer to this part of the book_: [Artificial Intelligence: A Modern Approach by Russell and Norvig](https://people.engr.tamu.edu/guni/csce421/files/AI_Russell_Norvig.pdf#page=111)
 
-## 2 .Red Black Tree Data Structure: 
+#### Why choose A* Search over Dijkstra's algorithm:
+A* is generally preferred over Dijkstra’s algorithm when we need an efficient, goal-directed search. While Dijkstra’s explores all possible paths within a given distance, A* focuses on the most promising paths by combining actual path cost with a heuristic estimate to the goal. This allows A* to reach the target faster, especially in large graphs, provided a good heuristic is available.
 
-also called as RB Trees which are highly used data structure since they efficiently performs search, insert and delete operation in O(log(n)).
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b93bb35b-1c43-4ba7-b13e-f3d72d418e70" alt="Screenshot from 2024-11-03 12-10-11" width="45%">
+  <img src="https://github.com/user-attachments/assets/5472306c-22fd-4537-b05b-dd2a8caf01d4" alt="Screenshot from 2024-11-03 12-13-03" width="45%">
 
-### self balancing property
-#### left rotate right rotate
-- Left Rotation:
-  
-      x                  y                                              
-       \                / \                               
-        y       -->    x   b                                        
-       / \              \                                         
-      a   b              a                                         
+ _This above image depicts how effective A* search algorithm performs over dijkstra's when a source and destination is fixed_
+</p>
 
+### 2. Red Black Tree Data Structure: 
+The Red-Black Tree is a balanced binary search tree (BST) that ensures O(log n) complexity for insertion, deletion, and search operations. Unlike regular BSTs, which can degrade to O(n) time in worst cases (like a skewed tree), a Red-Black Tree maintains a balanced structure, making it highly efficient for dynamic datasets.
 
-- Right Rotation:    
-   
-          x              y
-         /              / \
-        y       -->    a   x
-       / \                / 
-      a   b              b
+#### Self Balancing property:
+The self balancing property is solely responsible for a RB Tree to perform operations in O(log n) complexity including the worst cases.
+ 
+ - Node Color: Each node is either red or black.
+ - Root Property: The root of the tree is always black.
+ - Red Property: Red nodes cannot have red children (no two consecutive red nodes on any path).
+ - Black Property: Every path from a node to its descendant null nodes (leaves) has the same number of black nodes.
+ - Leaf Property: All leaves (NIL nodes) are black.
 
-### easy search property
-#### instert fix and delete fix 
-### where we used rb tree in code
-  
-## Usage
+To uphold these properties, Red-Black Trees utilize rotations and recoloring during inserts and deletes. After each insertion or deletion, the tree checks for property violations and applies either a left or right rotation, alongside recoloring, to restore balance.
+ 
+#### RB Tree Usage in this Project:
+When multiple destinations are input by the user, our project allows users to specify certain edges to avoid, enhancing user control over the path.
+
+##### Purpose: 
+To efficiently manage this functionality, we delete specific edges from the graph, as requested by the user.
+
+##### Why RB Tree?  
+We store the graph data from graph_data.csv in a Red-Black Tree to ensure that searches and deletions of user-specified “avoided edges” are handled in 
+𝑂(log 𝑛) time, a significant improvement over the linear O(n) time complexity.
+
+##### Structuring Graph as RB Tree:
+- Edge Structure: Each edge has three attributes: `node1`, `node2`, and `weight`.
+- RB Tree Node Design: Each `RB_Node` in the Red-Black Tree represents an edge and stores these attributes.
+- To keep the Red-Black Tree ordered, each node needs a unique property for comparison. Here, we use `node1` as the main attribute for sorting. If two edges have the same `node1`, we then 
+compare their `node2` values. This two-level comparison guarantees that each `RB_Node` is unique because the graph only allows one direct edge from `node1` to `node2`.
+
+## Usage   
 
 ### Requirements:
 - **Compiler**: GCC or similar with support for C99 or above.
@@ -128,7 +144,7 @@ also called as RB Trees which are highly used data structure since they efficien
   -  ```
      <node1>,<node2>,<w>
      ```
-   ### Example:
+   ### Example (the file should look like this):
      ```
       0,1,10
       0,2,7
@@ -155,11 +171,16 @@ also called as RB Trees which are highly used data structure since they efficien
    ```
    gcc -o main main.c -lm
    ```
-2. **Run the code**
+4. **Run the code**
    ```
    ./main
-   ``` 
+   ```
+5. **Output description**
+   Here is an example testcase for better understanding of input formatting and output expectation.
+   ```bash
+      
+   ```     
 ## Flow chart: 
-Our project is based on finding the nearest destination to the present node through using A_start algorithm, then repeating this process until all the destinations are visited. This below Flowchart showcases a simpler understanding of above mentioned process including the inputs and outputs.
+Our project focuses on identifying the nearest destination from the current node by utilizing the A* search algorithm. This process is repeated iteratively until all destination nodes have been visited. The flowchart below provides a clearer and more representation of this approach, illustrating the inputs and outputs involved in the overall process.
    
 ![Flowchart (1)](https://github.com/user-attachments/assets/01801169-5646-41ae-b790-5e2abcd952cb)
