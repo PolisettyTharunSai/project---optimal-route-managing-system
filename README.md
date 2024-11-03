@@ -183,9 +183,9 @@ Here is an example testcase for better understanding of input formatting and out
 
    ```
       Enter the number of edges to exclude: 0
-      Enter the source city (0 to 1999): 3
+      Enter the source city (0 to 4): 3
       Enter the number of destinations: 1
-      Enter the destination cities (0 to 1999):
+      Enter the destination cities (0 to 4):
       Destination 1: 1
       Path: 3 -> 2 -> 1
       Total minimal path cost to cover all destinations: 3
@@ -197,9 +197,9 @@ Please check the `graph_data.csv` again to check wheter the intended input is pr
    ```
       Enter the number of edges to exclude: 1
       Enter edge to exclude (node1,node2): 3,2
-      Enter the source city (0 to 1999): 3
+      Enter the source city (0 to 4): 3
       Enter the number of destinations: 1
-      Enter the destination cities (0 to 1999):
+      Enter the destination cities (0 to 4):
       Destination 1: 1
       Path: 3 -> 4 -> 2 -> 1
       Total minimal path cost to cover all destinations: 12
